@@ -3,14 +3,14 @@ function Domain_Extraction_Algorithm_Examples
 % extracts all contained domains from a three-dimensional triangulation
 %
 % Author: Sebastian Bohm (sebastian.bohm@tu-ilmenau.de)
-% Date: 18-11-2023
+% Date: 18-05-2024
 % License: MIT License
 
 close all
 addpath 'Functions' 'Meshfiles' % add folders to path
 
 %% Parameter
-file_name='8_domains_3_regions'; % file name of the triangulation in the 'Meshfiles' folder
+file_name='6_domains_4_regions_nested_two_times'; % file name of the triangulation in the 'Meshfiles' folder
 plot_geom_true_false=true; % if true: all domains are plotted in a single subplot.
 % Should be used with care: gets slow if the number of domains is high!
 
