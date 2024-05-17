@@ -5,7 +5,7 @@ function Domain_Connectivites_per_Region=Extract_Domains(Points,Connectivities_r
 % domains in all regions
 %
 % Author: Sebastian Bohm (sebastian.bohm@tu-ilmenau.de)
-% Date: 18-11-2023
+% Date: 18-05-2024
 % License: MIT License
 
 Domain_Connectivites_per_Region=cell(length(Connectivities_regions),1);
@@ -100,7 +100,7 @@ for n=1:num_Edges
     inds=actual_list(:,2)==actual_edge(2);
     num_Edges_act=sum(inds);
     temp_list=actual_list(inds,:);
-    
+
     for m=1:num_Edges_act
         all_wedges(j,:)=[temp_list(mod(m,num_Edges_act)+1,3) temp_list(m,1:3)];
         j=j+1;
@@ -188,12 +188,12 @@ while(true)
                 
                 if(~isempty(ind_new))
                     last_hit=k;
+                    j=j+1;
+
                     cont=false;
                     
                     W=wedge_list(ind_new,:);
-                    
                     subset_first_entry=W;
-                    j=j+1;
                     dom_wedges(j,:)=W;
                     
                     ind_left_per_vertex{A(2)}(ind_new)=[];

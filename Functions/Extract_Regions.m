@@ -4,7 +4,7 @@ function Connectivities_Regions=Extract_Regions(Initial_Connectivity)
 % regions of the geometry
 %
 % Author: Sebastian Bohm (sebastian.bohm@tu-ilmenau.de)
-% Date: 18-11-2023
+% Date: 18-05-2024
 % License: MIT License
 
 % create planar graph from the initial connectivity
