@@ -56,13 +56,13 @@ end
 %% 3.step: extract outer hulls
 tri_per_regions_outer_hull=cell(length(unique(Reg_Dom_ExtInt(:,1))),1);
 for n=1:Number_of_regions
-    entries_act_region=Reg_Dom_ExtInt(Reg_Dom_ExtInt(:,1)==n,:);
-    tri_per_regions_outer_hull{n}=Domain_Connectivites_per_Region{n}{entries_act_region(:,end)==1};
+    entries_corrected_region=Reg_Dom_ExtInt(Reg_Dom_ExtInt(:,1)==n,:);
+    tri_per_regions_outer_hull{n}=Domain_Connectivites_per_Region{n}{entries_corrected_region(:,end)==1};
 end
 
 %% 4.step: test if regions are nested
 % nested tells us which region is nested inside another region
-% if (i,j)==1 --> region j is inside region i
+% if (n,k)==1 --> region k is inside region n
 nested_regions=zeros(Number_of_regions);
 for n=1:Number_of_regions   
     inds_outer=tri_per_regions_outer_hull{n}(:);
@@ -105,12 +105,16 @@ for n=1:Number_of_regions
 end
 
 %% 5. step: test if multiple regions are nested inside of another region
+nested_regions_all=nested_regions; % store original nesting matrix
 nested_sum=sum(nested_regions);
+nested_regions_store=nested_regions;
 for n=1:Number_of_regions
-    if(nested_sum(n)>1) % multiple regions are nested inside region n
+    if(nested_sum(n)>1) % region n is nested inside multiple regions
         for k=1:Number_of_regions
             for j=1:Number_of_regions
-                if(nested_regions(k,j)==1 && nested_regions(k,n)==1 && nested_regions(j,n)==1)
+                if(nested_regions_store(k,j)==1 && nested_regions_store(k,n)==1 && nested_regions_store(j,n)==1)
+                    % if 'j is inside k' and 'n is inside k' and 'n is
+                    % inside j' --> n is not in k
                     nested_regions(k,n)=0;
                 end
             end
@@ -133,14 +137,14 @@ for n=1:Number_of_regions
     if(num_nested_regions(n)>0) 
         for k=1:Number_of_regions
             if(nested_regions(n,k)==1)                
-                entries_act_region=Reg_Dom_ExtInt(Reg_Dom_ExtInt(:,1)==n,:);
-                vec_inds=1:length(entries_act_region(:,1)); % vec from 1 to #domains of the actual region
-                inds_internal_domains=vec_inds(entries_act_region(:,end)==0); % internal domains of the actual region
+                entries_corrected_region=Reg_Dom_ExtInt(Reg_Dom_ExtInt(:,1)==n,:);
+                vec_inds=1:length(entries_corrected_region(:,1)); % vec from 1 to #domains of the actual region
+                inds_internal_domains=vec_inds(entries_corrected_region(:,end)==0); % internal domains of the actual region
                 ind_P_test=tri_per_regions_outer_hull{k}(1,1);  
                 
                 for j=1:length(inds_internal_domains) 
                     % test for each internal domain                     
-                    con_outer=Domain_Connectivites_per_Region{n}{entries_act_region(inds_internal_domains(j),2)};
+                    con_outer=Domain_Connectivites_per_Region{n}{entries_corrected_region(inds_internal_domains(j),2)};
                     inds_outer=con_outer(:);
 
                     xmin_outer=min(Points(inds_outer,1)); xmax_outer=max(Points(inds_outer,1));
@@ -189,23 +193,24 @@ for n=1:Number_of_regions
     end
 end
 
+
 %% 7.step: correct geometry information matrix and delete the double entries from the connectivity list
 for n=1:Number_of_regions
     for k=1:Number_of_regions
         if(nested_regions(n,k)==1)
-            % delete unused connectivity
+            % delete unused external connectivity
             Domain_Connectivites_per_Region{k}(Reg_Dom_ExtInt(Reg_Dom_ExtInt(:,1)==k,3)==1)=[];
             
             % index of the removed conenctivity
             ind_removed_external_domain=Reg_Dom_ExtInt(:,1)==k & Reg_Dom_ExtInt(:,3)==1;
 
-            % domain number of the removed conenctivity
+            % domain number of the removed external connectivity
             dom_num_removed_external_domain=Reg_Dom_ExtInt(ind_removed_external_domain,2);
             
             % reduce all domain numbers that are larger than the removed
             % domain number by one
-            Reg_Dom_ExtInt(Reg_Dom_ExtInt(:,1)==k & Reg_Dom_ExtInt(:,2)>dom_num_removed_external_domain,2)=...
-                Reg_Dom_ExtInt(Reg_Dom_ExtInt(:,1)==k & Reg_Dom_ExtInt(:,2)>dom_num_removed_external_domain,2)-1;
+            inds_correction=Reg_Dom_ExtInt(:,1)==k & Reg_Dom_ExtInt(:,2)>dom_num_removed_external_domain;
+            Reg_Dom_ExtInt(inds_correction,2)=Reg_Dom_ExtInt(inds_correction,2)-1;
             
             % remove the entry from the geometry information matrix
             Reg_Dom_ExtInt(ind_removed_external_domain,:)=[];
@@ -214,21 +219,21 @@ for n=1:Number_of_regions
 end
 
 %% 8. step: correct the connectivities of all regions
-for n=Number_of_regions:-1:1
-    for k=Number_of_regions:-1:1
-        if(nested_regions(n,k)==1)
+for n=1:Number_of_regions
+    for k=1:Number_of_regions
+        if(nested_regions_all(n,k)==1) % use complete nesting matrix since each region can be nested multiple times
             Domain_Connectivites_per_Region{n}=...
                 [Domain_Connectivites_per_Region{n};...
-                 Domain_Connectivites_per_Region{k}];
+                Domain_Connectivites_per_Region{k}];
 
-            entries_act_region=Reg_Dom_ExtInt(:,1)==k;
-            entries_test_region=Reg_Dom_ExtInt(:,1)==n;
-            
-            number_subdomains=max(Reg_Dom_ExtInt(entries_test_region,2));
-            vec_new_nums=(number_subdomains+1):(number_subdomains+sum(entries_act_region));
-            
-            Reg_Dom_ExtInt(entries_act_region,1)=n;
-            Reg_Dom_ExtInt(entries_act_region,2)=vec_new_nums;
+            entries_corrected_region=Reg_Dom_ExtInt(:,1)==k;
+            entries_surrounding_region=Reg_Dom_ExtInt(:,1)==n;
+
+            number_subdomains=max(Reg_Dom_ExtInt(entries_surrounding_region,2));
+            vec_new_nums=(number_subdomains+1):(number_subdomains+sum(entries_corrected_region));
+
+            Reg_Dom_ExtInt(entries_corrected_region,1)=n;
+            Reg_Dom_ExtInt(entries_corrected_region,2)=vec_new_nums;
         end
     end
 end
