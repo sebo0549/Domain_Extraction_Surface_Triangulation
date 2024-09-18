@@ -14,7 +14,7 @@ file_name='6_domains_4_regions_nested_two_times'; % file name of the triangulati
 plot_geom_true_false=true; % if true: all domains are plotted in a single subplot.
 % Should be used with care: gets slow if the number of domains is high!
 
-fprintf('Extracting domains from the mesh file: ''%s.stl''\n',file_name)
+fprintf('Extracting domains from the mesh file: ''%s.stl''\n\n',file_name)
 
 % import mesh file
 TR = stlread(sprintf('%s.stl',file_name));
@@ -36,7 +36,9 @@ Connectivities=Correct_Nested_Geometry_Parts(TR.Points,Domain_Connectivites_per_
 t=toc;
 
 % print runtime
-fprintf('time needed: t=%1.3fs, num elements: N=%1.0f\n\n',t,Num_Elements)
+fprintf('Geometry consists of %1.0f domains\n',length(Connectivities))
+fprintf('Time needed: t = %1.3fs\n',t)
+fprintf('Number of elements: M = %1.0f\n\n',Num_Elements)
 
 if(plot_geom_true_false)
     % plot the initial geometry and all extracted domains
