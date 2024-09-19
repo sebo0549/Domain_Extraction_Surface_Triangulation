@@ -219,35 +219,36 @@ for n=1:Number_of_regions
 end
 
 %% 8. step: correct the connectivities of all regions
-for n=1:Number_of_regions
-    for k=1:Number_of_regions
-        if(nested_regions_all(n,k)==1) % use complete nesting matrix since each region can be nested multiple times
-            Domain_Connectivites_per_Region{n}=...
-                [Domain_Connectivites_per_Region{n};...
-                Domain_Connectivites_per_Region{k}];
+inds_outer_regions=find(sum(nested_regions_all)==0); % region is not nested --> outer region
 
-            entries_corrected_region=Reg_Dom_ExtInt(:,1)==k;
-            entries_surrounding_region=Reg_Dom_ExtInt(:,1)==n;
+Domain_Connectivites_per_Region_final=cell(length(inds_outer_regions),1);
+for n=1:length(inds_outer_regions)
+    % inds of all nested regions inside act outer region
+    inds_regions_nested=find(nested_regions_all(inds_outer_regions(n),:)); 
+    
+    % initialize connectivity
+    Domain_Connectivites_per_Region_final{n}=Domain_Connectivites_per_Region{inds_outer_regions(n)};
 
-            number_subdomains=max(Reg_Dom_ExtInt(entries_surrounding_region,2));
-            vec_new_nums=(number_subdomains+1):(number_subdomains+sum(entries_corrected_region));
+    for k=1:length(inds_regions_nested)
+        % attach connectivity
+        Domain_Connectivites_per_Region_final{n}=...
+            [Domain_Connectivites_per_Region_final{n};...
+            Domain_Connectivites_per_Region{inds_regions_nested(k)}];
+        
+        % correct geometry information matrix
+        entries_surrounding_region = Reg_Dom_ExtInt(:,1)==inds_outer_regions(n);
+        number_subdomains=max(Reg_Dom_ExtInt(entries_surrounding_region,2));
 
-            Reg_Dom_ExtInt(entries_corrected_region,1)=n;
-            Reg_Dom_ExtInt(entries_corrected_region,2)=vec_new_nums;
-        end
+        entries_corrected_region   = Reg_Dom_ExtInt(:,1)==inds_regions_nested(k);
+        vec_new_nums=(number_subdomains+1):(number_subdomains+sum(entries_corrected_region));
+
+        Reg_Dom_ExtInt(entries_corrected_region,1)=inds_outer_regions(n);
+        Reg_Dom_ExtInt(entries_corrected_region,2)=vec_new_nums;
     end
 end
+% set corrected connectivity 
+Domain_Connectivites_per_Region=Domain_Connectivites_per_Region_final;
 
-num_remaining_regions=length(unique(Reg_Dom_ExtInt(:,1)));
-for n=1:num_remaining_regions-1
-    m=min(Reg_Dom_ExtInt(Reg_Dom_ExtInt(:,1)>n,1));
-    inds=m==Reg_Dom_ExtInt(:,1);
-    Reg_Dom_ExtInt(inds,1)=m-(m-n)+1;
-end
-
-% remove unnecessary region connectivities 
-delete=sum(nested_regions)==1;
-Domain_Connectivites_per_Region(delete)=[];
 
 % final number of regions
 Number_of_regions=length(Domain_Connectivites_per_Region);
